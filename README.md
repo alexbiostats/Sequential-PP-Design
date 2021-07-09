@@ -7,4 +7,6 @@ Accompanying R code to replicate simulation results for the "Understanding baske
 
 **seqPP_result_code.R**: code to take simulation results and summarize with tables and figures
 
-**mem_seq_bt_results.txt**: text file of simulation results
+**mem_seq_bt_results_part1.txt**: text file of simulation results (part 1 of 2, need to merge together with part 2 for summarizing results using `seqPP_result_code.R`)
+
+**mem_seq_bt_results_part2.txt**: text file of simulation results (part 2 of 2, need to merge together with part 1 for summarizing results using `seqPP_result_code.R`)
