@@ -406,12 +406,12 @@ predProb <- function(Data,pars, remain, p0, pt){
 
 
 # Posterior probability
-postProb <- function(Data,pars, p0, pt){
+postProb <- function(Data,pars, p0, pt=NULL){
 ##### posterior probability calculation for after all enrollment is complete, modification of predProb
 ### Data: X (events), N (sample size)
 ### pars: LB, UB parameters for MEM prior
 ### p0: null value
-### pt: threshold
+### pt: threshold - REMAINS FOR LEGACY TO WORK WITH SIMULATION CODE, BUT NOT NEEDED FOR FUNCTION SINCE IT ISN'T USED IN POSTERIOR PROBABILITY CALCULATION
 
 	marg.M <- MEM_marginalLoop(xvec=Data$X, nvec=Data$N, avec=rep(0.5,length(Data$N)), bvec=rep(0.5,length(Data$N)),INITIAL=NA)
 	print(marg.M)
@@ -533,3 +533,91 @@ trial_simon_sim <- function(rates, numPat=25, start=5, UB='s', p0=0.1, postp=NA,
 	write.table(matrix(ret_vec,nrow=1), file=filename, col.names = F, row.names = F, append = TRUE)
 }
 
+
+
+################ Functions ###############
+#### Used to implement method from "The Bayesian basket design for genomic variant-driven phase II trials" by Simon, et al., in Seminars in Oncology 43 (2016): 13-18.
+#### https://github.com/brbnci/BasketTrials/blob/master/global.R
+##########################################
+
+find_postk <- function(lambda, gamma, r, n, plo, phi){
+  ## P0
+  P0.num <- (1-gamma)*prod(dbinom(r, n, plo))
+  P0.deno <- gamma*prod(dbinom(r, n, phi))
+  P0 <- 1/(1 + (P0.num/P0.deno))
+  
+  ## Pk_ind
+  Pk.num <- gamma*dbinom(r, n, phi)
+  Pk.deno <- gamma*dbinom(r, n, phi) + (1-gamma)*dbinom(r, n, plo)
+  Pk <- Pk.num/Pk.deno
+  
+  ## P[pi = 1|data]
+  pi1.num <- (1-lambda)*prod(gamma*dbinom(r, n, phi) + (1-gamma)*dbinom(r, n, plo))
+  pi1.deno <- lambda*(gamma*prod(dbinom(r, n, phi)) + (1-gamma)*prod(dbinom(r, n, plo)))
+  pi1 <- 1/(1+(pi1.num/pi1.deno))
+  
+  ## Finally, post prob of activity in each strata
+  postk <- P0*pi1 + Pk*(1 - pi1)
+  postk
+}
+
+
+trial_sim_simon_postprob <- function(rates, numPat=25, start=5, UB=NA, p0=0.1, postp, prep, seed, filename, p1=0.3, lambda=0.5, gamma=0.33){
+### Function to simulate trial based on given inputs
+# rates: vector of rates for baskets
+# numPat: max number of patients
+# start: number of patients to wait for before starting monitoring
+# UB: upper boundary borrowing parameter, not applicable for Simon 2016 paper
+# p0: null response (p_lo in terms of Simon 2016 paper)
+# postp: posterior probability threshold to use for efficacy
+# prep: posterior probability threshold to use for futility monitoring
+# seed: seed to set for simulation, default is 515
+# filename: name to use in exporting results
+# p1: alternative response rate (p_hi in terms of Simon 2016 paper)
+# lambda: probability baskets are completely correlated, default is 0.5 per Simon 2016 paper
+# gamma: probability drug is active in any specific basket, default is 0.33 per Simon 2016 paper
+
+	set.seed(seed)
+
+	numArm <- length(rates)
+	dat <- sapply(1:numArm, function(x) rbinom(n=numPat, size=1, prob=rates[x])) # simulate trial data for all baskets
+
+	pars <- list(LB=0, UB=0) ## MMLE lower, upper boundary
+  
+	if(prep==0){ 
+		X <- colSums(dat)
+		N <- rep(numPat,numArm)
+		Data <- list( X=X,N=N )
+	}else{
+
+		# Calculate number of events and sample size at start
+		X <- colSums( dat[1:(start-1),] )
+		N <- rep( (start-1), numArm )
+		be <- rep(TRUE, numArm) # indicator for if a basket is still enrolling
+  
+		# Loop through each enrollment and stop baskets as needed
+		for (j in start:numPat){
+
+			# Update date for jth enrollment if basket still enrolling
+			X[which(be==T)] <- sapply(which(be==T), function(z) if(be[z]==T){ X[z] <- X[z] + dat[j,z]})
+			N[which(be==T)] <- sapply(which(be==T), function(z) if(be[z]==T){ N[z] <- N[z] + 1})
+			Data <- list( X=X, N=N ) ## Vectors of Observed number of Responses (X) and Patients (N)
+
+			if( j == numPat ){ break } # break to calculate posterior probability after loop
+			Nremain <- sapply(1:numArm, function(z) if(be[z]==T){ numPat-N[z] }else{ 0 }) # max number left to enroll
+			r <- find_postk(lambda=lambda, gamma=gamma, r=X, n=N, plo=p0, phi=p1)
+
+			be[which(be==T)] <- sapply(which(be==T), function(z) if(be[z]==T){ be[z] <- r[z] >= prep }) # if pred. prob >= prep (threshold), keep enrolling
+		
+			if( sum(be==F)==numArm ){ break } # break if all arms have stopped enrollment
+		}
+	}
+
+	post_prob <- find_postk(lambda=lambda, gamma=gamma, r=Data$X, n=Data$N, plo=p0, phi=p1) #postProb(Data=Data, pars=pars, p0=p0, pt=postp)
+	reject_ind <- post_prob >= postp
+	reject_ind[ which(N < numPat) ] <- 0 #fix added after seeing results where early stop could also result in reject pending postp
+	earlystop_ind <- (N < numPat)
+
+	ret_vec <- c('seed'=seed, 'UB'=UB, 'p0'=p0, 'prep'=prep, 'postp'=postp, 'rate'=rates,'X'=X, 'N'=N, 'PP'=post_prob, 'reject'=reject_ind, 'earlystop'=earlystop_ind) 
+	write.table(matrix(ret_vec,nrow=1), file=filename, col.names = F, row.names = F, append = TRUE)
+}
