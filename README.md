@@ -17,3 +17,5 @@ basket trials: A comparison of Simon’s two-stage design and Bayesian predictiv
 **mem_seq_bt_results_part3.txt**: text file of simulation results (part 3 of 4, need to merge together with other parts for summarizing results using `seqPP_result_code.R`)
 
 **mem_seq_bt_results_part4.txt**: text file of simulation results (part 4 of 4, need to merge together with other parts for summarizing results using `seqPP_result_code.R`)
+
+**Seq_PP_ENAR_2022_Presentation.pdf**: presentation slides from the ENAR 2022 Meeting relating to the project/paper
