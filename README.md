@@ -4,10 +4,16 @@ basket trials: A comparison of Simon’s two-stage design and Bayesian predictiv
 
 **function_mem_seq_bt.R**: a set of functions for implementing the simulation study
 
+**probability_threshold_calibration.R**: code to calibrate the posterior probability thresholds for the three Bayesian approaches assuming no interim monitoring for the global null scenario
+
 **snowfall_sim_memseqbt.R**: code to run simulations with parallelization
 
 **seqPP_result_code.R**: code to take simulation results and summarize with tables and figures
 
-**mem_seq_bt_results_part1.txt**: text file of simulation results (part 1 of 2, need to merge together with part 2 for summarizing results using `seqPP_result_code.R`)
+**mem_seq_bt_results_part1.txt**: text file of simulation results (part 1 of 4, need to merge together with other parts for summarizing results using `seqPP_result_code.R`)
 
-**mem_seq_bt_results_part2.txt**: text file of simulation results (part 2 of 2, need to merge together with part 1 for summarizing results using `seqPP_result_code.R`)
+**mem_seq_bt_results_part2.txt**: text file of simulation results (part 2 of 4, need to merge together with other parts for summarizing results using `seqPP_result_code.R`)
+
+**mem_seq_bt_results_part3.txt**: text file of simulation results (part 3 of 4, need to merge together with other parts for summarizing results using `seqPP_result_code.R`)
+
+**mem_seq_bt_results_part4.txt**: text file of simulation results (part 4 of 4, need to merge together with other parts for summarizing results using `seqPP_result_code.R`)
